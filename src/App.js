@@ -1,96 +1,132 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import BookList from './components/BookList.js'
 import firebase from 'firebase'
 import Database from './components/Database.js'
 
-class App extends Component {
+const App = () => {
+  const[books, setBooks] = useState([])
+  const[isbnList, setISBN] = useState([])
+  const[areBooksLoaded, setBooksLoaded] =useState(false)
+  const[newBookAdded, addBook] = useState(false) 
   
-  constructor(props) {
-    super(props);
-    this.state = {
-      books : [], 
-      isbnList : [],
-      areBooksLoaded : false,
-      newBookAdded: false
-    }   
-  }
-
-  componentDidMount() {
-    this.GetBooksFromDB()
-
-    this.state.isbnList.forEach((isbnNumber) => {
-      fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnNumber}&jscmd=data&format=json`) 
-        .then((response) => {
-          if(response.ok) {
-            return response.json();  
-          } else {
-            throw response.status;
-          }
-        })
-        .then((data) => {
-          if(data) {
-            this.state.books.push(data)
-          }  
-        })
-        .then(() => {
-          this.setState({areBooksLoaded:true})
-        })
-        .catch(() => {
-          console.log("Data failed to load")
-        }) 
-      })
-    }
-
-  GetBooksFromDB = () => {
+  const fetchingBooks = () => {
     const db = firebase.database();
-
+    
     db.ref("titles").on("value", (data) => {
       const bookISBN = data.val();
-      console.log(bookISBN[`-M_wId2vQ8HsuAOzOB9R`].isbn)
-      
-      // Need to create another loop to access ISBN values from object seen in console.log above
+      const key = Object.keys(bookISBN)
+      key.map((key) => {
+        setISBN(isbnList.push(bookISBN[key].isbn))
+      })
     })
   }
-  
-  AddBook= () => {
-    const db = firebase.database();
-    const isbnToAdd = document.querySelector(".isbn-field").value
-    console.log(isbnToAdd)
-  
-    fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnToAdd}&jscmd=data&format=json`) 
+
+    // Why isn't it loading books when first opened, and how do I changes the CSS to do more
+    // of a left to right instead of top to bottom
+
+  useEffect(() => {
+    fetchingBooks()
+    const request = isbnList?.map((isbnNumber) => {
+      fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnNumber}&jscmd=data&format=json`)
       .then((response) => {
         if(response.ok) {
-          return response.json();  
+          return response.json();   
         } else {
           throw response.status;
         }
       })
       .then((data) => {
-        console.log(data)
-        db.ref("titles").push({
-          title: data[`ISBN:${isbnToAdd}`]["title"],
-          isbn: isbnToAdd 
-        })
-        console.log("sent to DB") 
+        setBooks(books.push(data))
       })
+    })
+    console.log(books)
+  }, [])
+
+  // GetBooksFromDB = () => {
+  //   const db = firebase.database();
+
+  //   db.ref("titles").on("value", (data) => {
+  //     const bookISBN = data.val();
+  //     const key = Object.keys(bookISBN)
+  //     key.map((key) => {
+  //       return this.state.isbnList.push(bookISBN[key].isbn)
+  //     })
+  //   })
+  // }
+  
+  //Function below was pulled from a Geeks for Geeks article on validating and ISBN number
+  const isValidISBN = (isbn) => {  
     
-  // Need help here, getting "Cannot read property 'state' of undefined"    
-    this.state.isbnList = [...this.state.isbnList, isbnToAdd]
-    this.setState({newBookAdded: true})
-        
+    //Length must be 10 digits   
+      let n = isbn.length;
+      if (n !== 10)
+          return false;
+    //Calculates weighted sum of first 9 numbers
+      let sum = 0;
+      for (let i = 0; i < 9; i++) {
+        let digit = isbn[i] - '0';
+            
+        if (0 > digit || 9 < digit)
+            return false;
+                
+        sum += (digit * (10 - i));
+      }
+  
+    // Checking last digit.
+      let last = isbn[9];
+      if (last !== 'X' && (last < '0' || last > '9'))
+          return false;
+  
+    // If last digit is 'X', add 10
+    // to sum, else add its value.
+      sum += ((last === 'X') ? 10 : (last - '0'));
+  
+    // Return true if weighted sum
+    // of digits is divisible by 11.
+      return (sum % 11 === 0);
   }
 
-  render() {
+  // AddBook= () => {
+  //   const db = firebase.database();
+  //   const isbnToAdd = document.querySelector(".isbn-field").value
+    
+  //   if(this.isValidISBN(isbnToAdd)) {
+  //     fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnToAdd}&jscmd=data&format=json`) 
+  //       .then((response) => {
+  //         if(response.ok) {
+  //           return response.json();  
+  //         } else {
+  //           throw response.status;
+  //         }
+  //       })
+  //       .then((data) => {
+  //         if(data[`ISBN:${isbnToAdd}`]["title"] && isbnToAdd) {
+  //           db.ref("titles").push({
+  //             title: data[`ISBN:${isbnToAdd}`]["title"],
+  //             isbn: isbnToAdd 
+  //           })
+  //           console.log("sent to DB") 
+  //         } else {
+  //           console.log("There was a problem with the ISBN entered")
+  //         }
+  //       }) 
+  //     this.setState({isbnList : [...isbnList, isbnToAdd]})
+  //     this.setState({newBookAdded: true})
+  //   } else {
+  //     console.log("Is not a valid ISBN")
+  //   }    
+  // }
     return (
       <div className="App">
         <header className="App-header">
           <h1>Welcome to Evie's Library!</h1>
           <p>Here you will find a list of all the books in Evie's current library. Be sure to check back often to see what she has been reading recently!</p>
-          <input className="isbn-field" placeholder="Use ISBN to add a book"></input>
-          <button className="button-style" onClick={this.AddBook}>Add A Book</button>
+          <p>You can add new books by entering the ISBN in the field below (no dashes or spaces)</p>
+          <input className="isbn-field" placeholder="Input ISBN here"></input>
+          {/* <button className="button-style" onClick={this.AddBook}>Add A Book</button> */}
           <section>
-            {this.state.books.map((book) => {
+            {books && books?.map((book) => {
              const key = Object.keys(book)
              return <BookList book={book} isbnKey={key}/>
             })} 
@@ -98,7 +134,6 @@ class App extends Component {
         </header>
       </div>
     );
-  }
 }
 
 export default App;
