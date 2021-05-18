@@ -7,27 +7,20 @@ import Database from './components/Database.js'
 const App = () => {
   const[books, setBooks] = useState([])
   const[isbnList, setISBN] = useState([])
-  const[areBooksLoaded, setBooksLoaded] =useState(false)
-  const[newBookAdded, addBook] = useState(false) 
   
   const fetchingBooks = () => {
     const db = firebase.database();
-    
     db.ref("titles").on("value", (data) => {
       const bookISBN = data.val();
       const key = Object.keys(bookISBN)
       key.map((key) => {
-        setISBN(isbnList.push(bookISBN[key].isbn))
+        return setISBN(isbnList.push(bookISBN[key].isbn))
       })
     })
   }
 
-    // Why isn't it loading books when first opened, and how do I changes the CSS to do more
-    // of a left to right instead of top to bottom
-
-  useEffect(() => {
-    fetchingBooks()
-    const request = isbnList?.map((isbnNumber) => {
+  const fetchingData = () => {
+    isbnList?.map((isbnNumber) => {
       fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnNumber}&jscmd=data&format=json`)
       .then((response) => {
         if(response.ok) {
@@ -37,23 +30,20 @@ const App = () => {
         }
       })
       .then((data) => {
-        setBooks(books.push(data))
+        console.log(data)
+        return setBooks(books.push(data))
       })
     })
     console.log(books)
+  }
+
+    // Why isn't it loading books when first opened, and how do I changes the CSS to do more
+    // of a left to right instead of top to bottom
+
+  useEffect(() => {
+    fetchingBooks()
+    fetchingData()
   }, [])
-
-  // GetBooksFromDB = () => {
-  //   const db = firebase.database();
-
-  //   db.ref("titles").on("value", (data) => {
-  //     const bookISBN = data.val();
-  //     const key = Object.keys(bookISBN)
-  //     key.map((key) => {
-  //       return this.state.isbnList.push(bookISBN[key].isbn)
-  //     })
-  //   })
-  // }
   
   //Function below was pulled from a Geeks for Geeks article on validating and ISBN number
   const isValidISBN = (isbn) => {  
@@ -87,36 +77,38 @@ const App = () => {
       return (sum % 11 === 0);
   }
 
-  // AddBook= () => {
-  //   const db = firebase.database();
-  //   const isbnToAdd = document.querySelector(".isbn-field").value
+  const AddBook= () => {
+    const db = firebase.database();
+    const isbnToAdd = document.querySelector(".isbn-field").value
     
-  //   if(this.isValidISBN(isbnToAdd)) {
-  //     fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnToAdd}&jscmd=data&format=json`) 
-  //       .then((response) => {
-  //         if(response.ok) {
-  //           return response.json();  
-  //         } else {
-  //           throw response.status;
-  //         }
-  //       })
-  //       .then((data) => {
-  //         if(data[`ISBN:${isbnToAdd}`]["title"] && isbnToAdd) {
-  //           db.ref("titles").push({
-  //             title: data[`ISBN:${isbnToAdd}`]["title"],
-  //             isbn: isbnToAdd 
-  //           })
-  //           console.log("sent to DB") 
-  //         } else {
-  //           console.log("There was a problem with the ISBN entered")
-  //         }
-  //       }) 
-  //     this.setState({isbnList : [...isbnList, isbnToAdd]})
-  //     this.setState({newBookAdded: true})
-  //   } else {
-  //     console.log("Is not a valid ISBN")
-  //   }    
-  // }
+    if(isValidISBN(isbnToAdd)) {
+      fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnToAdd}&jscmd=data&format=json`) 
+        .then((response) => {
+          if(response.ok) {
+            return response.json();  
+          } else {
+            throw response.status;
+          }
+        })
+        .then((data) => {
+          if(data[`ISBN:${isbnToAdd}`]["title"] && isbnToAdd) {
+            db.ref("titles").push({
+              title: data[`ISBN:${isbnToAdd}`]["title"],
+              isbn: isbnToAdd 
+            })
+            console.log("sent to DB") 
+          } else {
+            console.log("There was a problem with the ISBN entered")
+          }
+        }) 
+      setISBN(isbnList.push(isbnToAdd))
+      console.log(isbnList)
+    } else {
+      console.log("Is not a valid ISBN")
+    }    
+  }
+
+  console.log(books)
     return (
       <div className="App">
         <header className="App-header">
@@ -124,7 +116,7 @@ const App = () => {
           <p>Here you will find a list of all the books in Evie's current library. Be sure to check back often to see what she has been reading recently!</p>
           <p>You can add new books by entering the ISBN in the field below (no dashes or spaces)</p>
           <input className="isbn-field" placeholder="Input ISBN here"></input>
-          {/* <button className="button-style" onClick={this.AddBook}>Add A Book</button> */}
+          <button className="button-style" onClick={AddBook}>Add A Book</button>
           <section>
             {books && books?.map((book) => {
              const key = Object.keys(book)
