@@ -7,21 +7,18 @@ import Database from './components/Database.js'
 const App = () => {
   const[books, setBooks] = useState([])
   const[isbnList, setISBN] = useState([])
-  
+
   const fetchingBooks = () => {
     const db = firebase.database();
     db.ref("titles").on("value", (data) => {
       const bookISBN = data.val();
-      const key = Object.keys(bookISBN)
-      key.map((key) => {
-        return setISBN(isbnList.push(bookISBN[key].isbn))
-      })
+      setISBN(bookISBN)
     })
   }
 
   const fetchingData = () => {
-    isbnList?.map((isbnNumber) => {
-      fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnNumber}&jscmd=data&format=json`)
+    Object.values(isbnList).forEach((isbnNumber) => {
+      fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnNumber.isbn}&jscmd=data&format=json`)
       .then((response) => {
         if(response.ok) {
           return response.json();   
@@ -30,13 +27,11 @@ const App = () => {
         }
       })
       .then((data) => {
-        console.log(data)
-        return setBooks(books.push(data))
+        setBooks([...books, data])
       })
     })
-    console.log(books)
-  }
-
+  } 
+  console.log(books)
     // Why isn't it loading books when first opened, and how do I changes the CSS to do more
     // of a left to right instead of top to bottom
 
@@ -108,7 +103,6 @@ const App = () => {
     }    
   }
 
-  console.log(books)
     return (
       <div className="App">
         <header className="App-header">
