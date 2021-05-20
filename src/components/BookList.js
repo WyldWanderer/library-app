@@ -4,9 +4,9 @@ function BookList(props) {
     if(props) {
         return(
             <section className="book-container">
-                <img className="img-style" src={props["book"][props.isbnKey[0]]["cover"]["medium"]} alt="Book Cover"/>
-                <h3>{props["book"][props.isbnKey[0]]["title"]}</h3>
-                <h1>{props["book"][props.isbnKey[0]]["authors"]["name"]}</h1>
+                <img className="img-style" src={props.book.cover} alt="Book Cover"/>
+                <h3>{props.book.title}<br></br>
+                    Author: {props.book.author}</h3>
             </section>
         )
     } else {

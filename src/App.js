@@ -6,38 +6,20 @@ import Database from './components/Database.js'
 
 const App = () => {
   const[books, setBooks] = useState([])
-  const[isbnList, setISBN] = useState([])
+  const [newBookAdded, addBook] = useState(false)
 
   const fetchingBooks = () => {
+    const fetchedLibrary = []
     const db = firebase.database();
     db.ref("titles").on("value", (data) => {
-      const bookISBN = data.val();
-      setISBN(bookISBN)
+      const libraryData = data.val();
+      for (const [key] of Object.entries(libraryData)) {fetchedLibrary.push(libraryData[key])}
+      setBooks(fetchedLibrary)
     })
   }
 
-  const fetchingData = () => {
-    Object.values(isbnList).forEach((isbnNumber) => {
-      fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnNumber.isbn}&jscmd=data&format=json`)
-      .then((response) => {
-        if(response.ok) {
-          return response.json();   
-        } else {
-          throw response.status;
-        }
-      })
-      .then((data) => {
-        setBooks([...books, data])
-      })
-    })
-  } 
-  console.log(books)
-    // Why isn't it loading books when first opened, and how do I changes the CSS to do more
-    // of a left to right instead of top to bottom
-
   useEffect(() => {
     fetchingBooks()
-    fetchingData()
   }, [])
   
   //Function below was pulled from a Geeks for Geeks article on validating and ISBN number
@@ -76,7 +58,7 @@ const App = () => {
     const db = firebase.database();
     const isbnToAdd = document.querySelector(".isbn-field").value
     
-    if(isValidISBN(isbnToAdd)) {
+    if((isbnToAdd)) {
       fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnToAdd}&jscmd=data&format=json`) 
         .then((response) => {
           if(response.ok) {
@@ -89,15 +71,16 @@ const App = () => {
           if(data[`ISBN:${isbnToAdd}`]["title"] && isbnToAdd) {
             db.ref("titles").push({
               title: data[`ISBN:${isbnToAdd}`]["title"],
-              isbn: isbnToAdd 
-            })
-            console.log("sent to DB") 
+              isbn: isbnToAdd,
+              author: data[`ISBN:${isbnToAdd}`]["authors"]["0"]["name"],
+              cover: data[`ISBN:${isbnToAdd}`]["cover"]["medium"]  
+            }) 
           } else {
             console.log("There was a problem with the ISBN entered")
           }
-        }) 
-      setISBN(isbnList.push(isbnToAdd))
-      console.log(isbnList)
+        })
+        addBook(true)
+
     } else {
       console.log("Is not a valid ISBN")
     }    
@@ -112,9 +95,9 @@ const App = () => {
           <input className="isbn-field" placeholder="Input ISBN here"></input>
           <button className="button-style" onClick={AddBook}>Add A Book</button>
           <section>
-            {books && books?.map((book) => {
+            {books && books.map((book) => {
              const key = Object.keys(book)
-             return <BookList book={book} isbnKey={key}/>
+             return <BookList book={book} databaseKey={key}/>
             })} 
           </section>
         </header>
