@@ -27,39 +27,82 @@ const App = () => {
     
     //Length must be 10 digits   
       let n = isbn.length;
-      if (n !== 10)
-          return false;
     //Calculates weighted sum of first 9 numbers
-      let sum = 0;
-      for (let i = 0; i < 9; i++) {
-        let digit = isbn[i] - '0';
-            
-        if (0 > digit || 9 < digit)
+      if(n === 10) {
+        let sum = 0;
+        for (let i = 0; i < 9; i++) {
+          let digit = isbn[i] - '0';
+              
+          if (0 > digit || 9 < digit)
+              return false;
+                  
+          sum += (digit * (10 - i));
+        }
+    
+      // Checking last digit.
+        let last = isbn[9];
+        if (last !== 'X' && (last < '0' || last > '9'))
             return false;
+    
+      // If last digit is 'X', add 10
+      // to sum, else add its value.
+        sum += ((last === 'X') ? 10 : (last - '0'));
+    
+      // Return true if weighted sum
+      // of digits is divisible by 11.
+        return (sum % 11 === 0);
+      } else if(n === 13) {
+        let sum = 0;
+
+        for (let i = 0; i < 12; i++) {
+          if(i % 2 === 0) {
+            let digit = isbn[i] - '0';
                 
-        sum += (digit * (10 - i));
+            if (0 > digit || 12 < digit)
+                return false;
+                    
+            sum += (digit * 1);
+          } else {
+            let digit = isbn[i] - '0';
+                
+            if (0 > digit || 12 < digit)
+                return false;
+                    
+            sum += (digit * 3);
+          }
+        }
+    
+      // Checking last digit.
+        let last = isbn[12];
+        if (last !== 'X' && (last < '0' || last > '9'))
+            return false;
+    
+      // If last digit is 'X', add 10
+      // to sum, else add its value.
+        sum += ((last === 'X') ? 10 : (last - '0'));
+    
+      // Return true if weighted sum
+      // of digits is divisible by 11.
+        return (sum % 10 === 0);
+      } else {
+        return false
       }
-  
-    // Checking last digit.
-      let last = isbn[9];
-      if (last !== 'X' && (last < '0' || last > '9'))
-          return false;
-  
-    // If last digit is 'X', add 10
-    // to sum, else add its value.
-      sum += ((last === 'X') ? 10 : (last - '0'));
-  
-    // Return true if weighted sum
-    // of digits is divisible by 11.
-      return (sum % 11 === 0);
+  }
+
+  const checkDBForISBN = (isbnToCheck) => {
+    const currentISBN = books.map((book) => {
+      return book.isbn === isbnToCheck ?  true : false; 
+      })
+    return currentISBN.includes(true) ? true : false; 
   }
 
   const AddBook= () => {
     const db = firebase.database();
-    const isbnToAdd = document.querySelector(".isbn-field").value
-    
-    if((isbnToAdd)) {
-      fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnToAdd}&jscmd=data&format=json`) 
+    const isbnToAdd = document.querySelector(".isbn-field")
+    const fullBookList = document.querySelector("#book-list")
+
+    if(!checkDBForISBN(isbnToAdd.value) && isValidISBN(isbnToAdd.value)) {
+      fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnToAdd.value}&jscmd=data&format=json`) 
         .then((response) => {
           if(response.ok) {
             return response.json();  
@@ -68,18 +111,22 @@ const App = () => {
           }
         })
         .then((data) => {
-          if(data[`ISBN:${isbnToAdd}`]["title"] && isbnToAdd) {
+          if(data[`ISBN:${isbnToAdd.value}`]["title"] && isbnToAdd.value) {
             db.ref("titles").push({
-              title: data[`ISBN:${isbnToAdd}`]["title"],
-              isbn: isbnToAdd,
-              author: data[`ISBN:${isbnToAdd}`]["authors"]["0"]["name"],
-              cover: data[`ISBN:${isbnToAdd}`]["cover"]["medium"]  
+              title: data[`ISBN:${isbnToAdd.value}`]["title"],
+              isbn: isbnToAdd.value,
+              author: data[`ISBN:${isbnToAdd.value}`]["authors"]["0"]["name"],
+              cover: data[`ISBN:${isbnToAdd.value}`]["cover"]["medium"]  
             }) 
           } else {
             console.log("There was a problem with the ISBN entered")
           }
         })
-        addBook(true)
+        .then(() => {while(fullBookList.firstChild) {
+            fullBookList.removeChild(fullBookList.firstChild)
+          }
+        })
+        .then(() => {addBook(true)})
 
     } else {
       console.log("Is not a valid ISBN")
@@ -94,7 +141,7 @@ const App = () => {
           <p>You can add new books by entering the ISBN in the field below (no dashes or spaces)</p>
           <input className="isbn-field" placeholder="Input ISBN here"></input>
           <button className="button-style" onClick={AddBook}>Add A Book</button>
-          <section>
+          <section id="book-list">
             {books && books.map((book) => {
              const key = Object.keys(book)
              return <BookList book={book} databaseKey={key}/>
