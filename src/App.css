@@ -55,9 +55,26 @@
   padding: 15px
 }
 
+.search-box {
+  display: flex;
+  text-align: center;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+#input-fields {
+  display: flex;
+  justify-content: row;
+}
+
 h3 {
   align-content: center;
   padding: 0px, 0px, 0px, 0px; 
+}
+
+.book-buttons {
+  display: flex;
+  justify-content: space-around;
 }
 
 

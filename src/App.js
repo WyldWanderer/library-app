@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import { ReactDOM } from 'react-dom';
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { fab } from '@fortawesome/free-brands-svg-icons'
+import { faHeart } from '@fortawesome/free-solid-svg-icons';
+
 import BookList from './components/BookList.js'
 import firebase from 'firebase'
 import Database from './components/Database.js'
+import { isValidISBN } from './helpers/validators';
 
 const App = () => {
   const[books, setBooks] = useState([])
   const [newBookAdded, addBook] = useState(false)
+  const [searchInput, updateSearch] = useState("")
+  const [searchResults, searchedBookList] = useState([])
+
+  library.add(fab, faHeart)
 
   const fetchingBooks = () => {
     const fetchedLibrary = []
@@ -19,76 +29,10 @@ const App = () => {
   }
 
   useEffect(() => {
-    fetchingBooks()
+      fetchingBooks()
   }, [])
   
-  //Function below was pulled from a Geeks for Geeks article on validating and ISBN number
-  const isValidISBN = (isbn) => {  
-    
-    //Length must be 10 digits   
-      let n = isbn.length;
-    //Calculates weighted sum of first 9 numbers
-      if(n === 10) {
-        let sum = 0;
-        for (let i = 0; i < 9; i++) {
-          let digit = isbn[i] - '0';
-              
-          if (0 > digit || 9 < digit)
-              return false;
-                  
-          sum += (digit * (10 - i));
-        }
-    
-      // Checking last digit.
-        let last = isbn[9];
-        if (last !== 'X' && (last < '0' || last > '9'))
-            return false;
-    
-      // If last digit is 'X', add 10
-      // to sum, else add its value.
-        sum += ((last === 'X') ? 10 : (last - '0'));
-    
-      // Return true if weighted sum
-      // of digits is divisible by 11.
-        return (sum % 11 === 0);
-      } else if(n === 13) {
-        let sum = 0;
-
-        for (let i = 0; i < 12; i++) {
-          if(i % 2 === 0) {
-            let digit = isbn[i] - '0';
-                
-            if (0 > digit || 12 < digit)
-                return false;
-                    
-            sum += (digit * 1);
-          } else {
-            let digit = isbn[i] - '0';
-                
-            if (0 > digit || 12 < digit)
-                return false;
-                    
-            sum += (digit * 3);
-          }
-        }
-    
-      // Checking last digit.
-        let last = isbn[12];
-        if (last !== 'X' && (last < '0' || last > '9'))
-            return false;
-    
-      // If last digit is 'X', add 10
-      // to sum, else add its value.
-        sum += ((last === 'X') ? 10 : (last - '0'));
-    
-      // Return true if weighted sum
-      // of digits is divisible by 11.
-        return (sum % 10 === 0);
-      } else {
-        return false
-      }
-  }
-
+  // Function to check DB to see if the ISBN being added already exists in the DB (prevents duplicate books)
   const checkDBForISBN = (isbnToCheck) => {
     const currentISBN = books.map((book) => {
       return book.isbn === isbnToCheck ?  true : false; 
@@ -116,7 +60,8 @@ const App = () => {
               title: data[`ISBN:${isbnToAdd.value}`]["title"],
               isbn: isbnToAdd.value,
               author: data[`ISBN:${isbnToAdd.value}`]["authors"]["0"]["name"],
-              cover: data[`ISBN:${isbnToAdd.value}`]["cover"]["medium"]  
+              cover: data[`ISBN:${isbnToAdd.value}`]["cover"]["medium"],
+              favorite: false  
             }) 
           } else {
             console.log("There was a problem with the ISBN entered")
@@ -133,18 +78,47 @@ const App = () => {
     }    
   }
 
+  const searchBooksInput = (event) => {
+    updateSearch(event.target.value)
+    const filteredBooks = 
+      books.filter((book) => {
+        return book.title.toLowerCase().includes(searchInput.toLowerCase())
+      })
+
+    if(filteredBooks) {
+      searchedBookList(filteredBooks)
+    }
+  }
+
+  const deleteBook = (isbnToRemove) => {
+    const db = firebase.database();
+    db.ref("titles").on("value", (data) => {
+      const libraryData = data.val()
+      for (const [key, value] of Object.entries(libraryData)) {
+        if (value.isbn === isbnToRemove) {
+          db.ref("titles").child(key).remove()
+        }
+      }
+    })
+    window.location.reload(false)
+  }
+
     return (
       <div className="App">
         <header className="App-header">
           <h1>Welcome to Evie's Library!</h1>
           <p>Here you will find a list of all the books in Evie's current library. Be sure to check back often to see what she has been reading recently!</p>
           <p>You can add new books by entering the ISBN in the field below (no dashes or spaces)</p>
+          <div id="input-fields">
+          <input className="search-box" placeholder="Search for a Book" onChange={searchBooksInput}></input>
           <input className="isbn-field" placeholder="Input ISBN here"></input>
           <button className="button-style" onClick={AddBook}>Add A Book</button>
+          </div>
           <section id="book-list">
-            {books && books.map((book) => {
-             const key = Object.keys(book)
-             return <BookList book={book} databaseKey={key}/>
+            {!searchInput ? books.map((book) => {
+             return <BookList book={book} deleteBook={deleteBook}/>
+            }) : searchResults.map((book) => {
+              return <BookList book={book} deleteBook={deleteBook} />
             })} 
           </section>
         </header>
