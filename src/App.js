@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { ReactDOM } from 'react-dom';
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { fab } from '@fortawesome/free-brands-svg-icons'
-import { faHeart } from '@fortawesome/free-solid-svg-icons';
 
 import BookList from './components/BookList.js'
 import firebase from 'firebase'
 import Database from './components/Database.js'
 import { isValidISBN } from './helpers/validators';
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { fab } from '@fortawesome/free-brands-svg-icons'
+import { faHeart } from '@fortawesome/free-solid-svg-icons';
 
 const App = () => {
   const[books, setBooks] = useState([])
@@ -19,9 +18,10 @@ const App = () => {
   library.add(fab, faHeart)
 
   const fetchingBooks = () => {
+    setBooks([])
     const fetchedLibrary = []
     const db = firebase.database();
-    db.ref("titles").on("value", (data) => {
+    db.ref("titles").get().then((data) => {
       console.log("fetching books fired")
       const libraryData = data.val();
       for (const [key] of Object.entries(libraryData)) {fetchedLibrary.push(libraryData[key])}
@@ -74,27 +74,13 @@ const App = () => {
             console.log("There was a problem finding the ISBN entered")
           }
         })
-        .then((data) => {
-          const updatedBookList = books
-          setBooks(updatedBookList)
-          let isThereACover = false;
-          console.log(data)
-          // if (data[`ISBN:${isbnToAdd.value}`]["cover"]) { 
-          //   isThereACover = data[`ISBN:${isbnToAdd.value}`]["cover"]["medium"]
-          // }
-          // updatedBookList.push({
-          //   title: data[`ISBN:${isbnToAdd.value}`]["title"],
-          //   isbn: isbnToAdd.value,
-          //   author: data[`ISBN:${isbnToAdd.value}`]["authors"]["0"]["name"],
-          //   cover: isThereACover,
-          //   favorite: false  
-          // })
-          // setBooks(updatedBookList)
+        .then(() => {
+          fetchingBooks()
         })
-
     } else {
       console.log("This book has already been added or the ISBN is not valid")
-    }    
+    } 
+    console.log(books)   
   }
 
   const searchBooksInput = (event) => {
