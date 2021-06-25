@@ -11,14 +11,12 @@ import { faHeart } from '@fortawesome/free-solid-svg-icons';
 
 const App = () => {
   const[books, setBooks] = useState([])
-  const [newBookAdded, addBook] = useState(false)
   const [searchInput, updateSearch] = useState("")
   const [searchResults, searchedBookList] = useState([])
 
   library.add(fab, faHeart)
 
   const fetchingBooks = () => {
-    setBooks([])
     const fetchedLibrary = []
     const db = firebase.database();
     db.ref("titles").get().then((data) => {
