@@ -22,8 +22,10 @@ const App = () => {
     const fetchedLibrary = []
     const db = firebase.database();
     db.ref("titles").on("value", (data) => {
+      console.log("fetching books fired")
       const libraryData = data.val();
       for (const [key] of Object.entries(libraryData)) {fetchedLibrary.push(libraryData[key])}
+      console.log(fetchedLibrary)
       setBooks(fetchedLibrary)
     })
   }
@@ -55,26 +57,43 @@ const App = () => {
           }
         })
         .then((data) => {
+          let isThereACover = false;
+          if (data[`ISBN:${isbnToAdd.value}`]["cover"]) { 
+            isThereACover = data[`ISBN:${isbnToAdd.value}`]["cover"]["medium"]
+          }
+
           if(data[`ISBN:${isbnToAdd.value}`]["title"] && isbnToAdd.value) {
             db.ref("titles").push({
               title: data[`ISBN:${isbnToAdd.value}`]["title"],
               isbn: isbnToAdd.value,
               author: data[`ISBN:${isbnToAdd.value}`]["authors"]["0"]["name"],
-              cover: data[`ISBN:${isbnToAdd.value}`]["cover"]["medium"],
+              cover: isThereACover,
               favorite: false  
             }) 
           } else {
-            console.log("There was a problem with the ISBN entered")
+            console.log("There was a problem finding the ISBN entered")
           }
         })
-        .then(() => {while(fullBookList.firstChild) {
-            fullBookList.removeChild(fullBookList.firstChild)
-          }
+        .then((data) => {
+          const updatedBookList = books
+          setBooks(updatedBookList)
+          let isThereACover = false;
+          console.log(data)
+          // if (data[`ISBN:${isbnToAdd.value}`]["cover"]) { 
+          //   isThereACover = data[`ISBN:${isbnToAdd.value}`]["cover"]["medium"]
+          // }
+          // updatedBookList.push({
+          //   title: data[`ISBN:${isbnToAdd.value}`]["title"],
+          //   isbn: isbnToAdd.value,
+          //   author: data[`ISBN:${isbnToAdd.value}`]["authors"]["0"]["name"],
+          //   cover: isThereACover,
+          //   favorite: false  
+          // })
+          // setBooks(updatedBookList)
         })
-        .then(() => {addBook(true)})
 
     } else {
-      console.log("Is not a valid ISBN")
+      console.log("This book has already been added or the ISBN is not valid")
     }    
   }
 
@@ -92,15 +111,45 @@ const App = () => {
 
   const deleteBook = (isbnToRemove) => {
     const db = firebase.database();
-    db.ref("titles").on("value", (data) => {
+    db.ref("titles").get().then((data) => {
       const libraryData = data.val()
+      const updatedBooks = []
+
       for (const [key, value] of Object.entries(libraryData)) {
         if (value.isbn === isbnToRemove) {
           db.ref("titles").child(key).remove()
+        } else {
+          updatedBooks.push(libraryData[key])
         }
       }
+      setBooks(updatedBooks)
     })
-    window.location.reload(false)
+  }
+
+  const changeFavoriteStatus = (isbnOfBookToChange) => {
+    const db = firebase.database();
+    db.ref("titles").get().then((data) => {
+      const libraryData = data.val()
+      const updatedBooks = []
+
+      for (const [key, values] of Object.entries(libraryData)) {
+        const isbnOfBook = libraryData[key].isbn
+        const favoriteStatus = libraryData[key].favorite
+
+        if(isbnOfBook === isbnOfBookToChange && favoriteStatus === false) { 
+          db.ref("titles").child(key).update({favorite : true})
+          values.favorite = true
+          updatedBooks.push(values)
+        } else if (isbnOfBook === isbnOfBookToChange && favoriteStatus === true){
+          db.ref("titles").child(key).update({favorite : false});
+          values.favorite = false
+          updatedBooks.push(values)
+        } else {
+          updatedBooks.push(values)
+        }
+      }
+      setBooks(updatedBooks)
+    })
   }
 
     return (
@@ -116,7 +165,7 @@ const App = () => {
           </div>
           <section id="book-list">
             {!searchInput ? books.map((book) => {
-             return <BookList book={book} deleteBook={deleteBook}/>
+             return <BookList book={book} deleteBook={deleteBook} changeFavoriteStatus={changeFavoriteStatus} />
             }) : searchResults.map((book) => {
               return <BookList book={book} deleteBook={deleteBook} />
             })} 
