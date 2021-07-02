@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Route, Link } from 'react-router-dom';
 import './App.css';
 
 import BookList from './components/BookList.js'
@@ -43,7 +44,6 @@ const App = () => {
   const AddBook= () => {
     const db = firebase.database();
     const isbnToAdd = document.querySelector(".isbn-field")
-    const fullBookList = document.querySelector("#book-list")
 
     if(!checkDBForISBN(isbnToAdd.value) && isValidISBN(isbnToAdd.value)) {
       fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbnToAdd.value}&jscmd=data&format=json`) 
@@ -138,10 +138,15 @@ const App = () => {
 
     return (
       <div className="App">
-        <header className="App-header">
+        <header>
           <h1>Welcome to Evie's Library!</h1>
           <p>Here you will find a list of all the books in Evie's current library. Be sure to check back often to see what she has been reading recently!</p>
           <p>You can add new books by entering the ISBN in the field below (no dashes or spaces)</p>
+        </header>
+          <nav className="nav-bar">
+            <ul className="nav-button"><Link to="/home">Home</Link></ul>
+            <ul className="nav-button"><Link to="/favorites">Favorite Books</Link></ul>
+          </nav>
           <div id="input-fields">
           <input className="search-box" placeholder="Search for a Book" onChange={searchBooksInput}></input>
           <input className="isbn-field" placeholder="Input ISBN here"></input>
@@ -154,7 +159,6 @@ const App = () => {
               return <BookList book={book} deleteBook={deleteBook} />
             })} 
           </section>
-        </header>
       </div>
     );
 }
