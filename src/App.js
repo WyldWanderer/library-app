@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Route, Link } from 'react-router-dom';
 import './App.css';
-
-import BookList from './components/BookList.js'
 import firebase from 'firebase'
 import Database from './components/Database.js'
+
+import BookList from './components/BookList.js'
 import { isValidISBN } from './helpers/validators';
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fab } from '@fortawesome/free-brands-svg-icons'
@@ -21,10 +21,8 @@ const App = () => {
     const fetchedLibrary = []
     const db = firebase.database();
     db.ref("titles").get().then((data) => {
-      console.log("fetching books fired")
       const libraryData = data.val();
       for (const [key] of Object.entries(libraryData)) {fetchedLibrary.push(libraryData[key])}
-      console.log(fetchedLibrary)
       setBooks(fetchedLibrary)
     })
   }
@@ -142,22 +140,33 @@ const App = () => {
           <h1>Welcome to Evie's Library!</h1>
           <p>Here you will find a list of all the books in Evie's current library. Be sure to check back often to see what she has been reading recently!</p>
           <p>You can add new books by entering the ISBN in the field below (no dashes or spaces)</p>
-        </header>
           <nav className="nav-bar">
             <ul className="nav-button"><Link to="/home">Home</Link></ul>
             <ul className="nav-button"><Link to="/favorites">Favorite Books</Link></ul>
           </nav>
-          <div id="input-fields">
+        </header>
+        <div id="input-fields">
           <input className="search-box" placeholder="Search for a Book" onChange={searchBooksInput}></input>
           <input className="isbn-field" placeholder="Input ISBN here"></input>
           <button className="button-style" onClick={AddBook}>Add A Book</button>
-          </div>
+        </div>
           <section id="book-list">
-            {!searchInput ? books.map((book) => {
-             return <BookList book={book} deleteBook={deleteBook} changeFavoriteStatus={changeFavoriteStatus} />
-            }) : searchResults.map((book) => {
-              return <BookList book={book} deleteBook={deleteBook} />
-            })} 
+            <Route path="/home" render={() => {
+              return !searchInput ? books.map((book) => {
+                return <BookList book={book} searchInput={searchInput} deleteBook={deleteBook} changeFavoriteStatus={changeFavoriteStatus} />
+              }) : searchResults.map((book) => {
+                return <BookList book={book} deleteBook={deleteBook} />
+              })
+            }} />
+            <Route path="/favorites" render={() => {
+                return books.map((book) => {
+                  if(book.favorite) {
+                    return <BookList book={book} searchInput={searchInput} deleteBook={deleteBook} changeFavoriteStatus={changeFavoriteStatus} />
+                  }   
+                })
+              }}
+            />
+    
           </section>
       </div>
     );
