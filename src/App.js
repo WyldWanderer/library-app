@@ -17,6 +17,7 @@ const App = () => {
 
   library.add(fab, faHeart)
 
+  // Retrieve books from database
   const fetchingBooks = () => {
     const fetchedLibrary = []
     const db = firebase.database();
@@ -39,6 +40,7 @@ const App = () => {
     return currentISBN.includes(true) ? true : false; 
   }
 
+  // Function to check the database, validate the ISBN and add the book to the database
   const AddBook= () => {
     const db = firebase.database();
     const isbnToAdd = document.querySelector(".isbn-field")
@@ -79,6 +81,7 @@ const App = () => {
     console.log(books)   
   }
 
+  // Book search function
   const searchBooksInput = (event) => {
     updateSearch(event.target.value)
     const filteredBooks = 
@@ -91,6 +94,7 @@ const App = () => {
     }
   }
 
+  // Delete the book from database and update state
   const deleteBook = (isbnToRemove) => {
     const db = firebase.database();
     db.ref("titles").get().then((data) => {
@@ -108,6 +112,7 @@ const App = () => {
     })
   }
 
+  // Toggle favorite status of a book and update state
   const changeFavoriteStatus = (isbnOfBookToChange) => {
     const db = firebase.database();
     db.ref("titles").get().then((data) => {
