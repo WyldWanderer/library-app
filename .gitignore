@@ -22,4 +22,5 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-/components/Database.js
+# database API info
+/src/components/Database.js
