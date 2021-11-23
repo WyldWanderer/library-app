@@ -5,10 +5,15 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import firebase from "firebase/app"
 
+import { BrowserRouter as Router} from 'react-router-dom'
+
 ReactDOM.render(
-  <React.StrictMode>
+
+  <Router>
+    <React.StrictMode>
     <App />
-  </React.StrictMode>,
+    </React.StrictMode>
+  </Router>,
   document.getElementById('root')
 );
 
