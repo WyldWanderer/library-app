@@ -40,7 +40,7 @@ const App = () => {
     return currentISBN.includes(true) ? true : false; 
   }
 
-  const AddBook= () => {
+  const AddBook = () => {
     const db = firebase.database();
     const isbnToAdd = document.querySelector(".isbn-field")
     const fullBookList = document.querySelector("#book-list")
